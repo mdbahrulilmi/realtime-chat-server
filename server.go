@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+
+	"github.com/mdbahrulilmi/realtime-chat-server/ws"
 )
 
 type Page struct {
@@ -14,8 +16,7 @@ type Page struct {
     Body  []byte
 }
 
-var templates = template.Must(template.ParseFiles("edit.html", "view.html"))
-var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
+var templates = template.Must(template.ParseFiles("edit.html", "view.html","ws.html"))
 
 func (p *Page) save() error {
 	filename := p.Title + ".txt"
@@ -37,6 +38,9 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
         http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 }
+
+
+var validPath = regexp.MustCompile("^/(edit|save|view|ws-test)/([a-zA-Z0-9]+)$")
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +70,11 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string) {
     renderTemplate(w, "edit", p)
 }
 
+func wsHandler(w http.ResponseWriter, r *http.Request) {
+
+    renderTemplate(w, "ws", nil)
+}
+
 func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
     body := r.FormValue("body")
     p := &Page{Title: title, Body: []byte(body)}
@@ -79,6 +88,8 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 
 func main() {
 	port := ":2500"
+	http.HandleFunc("/ws", ws.Handler)
+	http.HandleFunc("/ws-test", wsHandler)
 	http.HandleFunc("/view/", makeHandler(viewHandler))
     http.HandleFunc("/edit/", makeHandler(editHandler))
     http.HandleFunc("/save/", makeHandler(saveHandler))
