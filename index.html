@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broadcast - WebSocket</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #dadbd4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .whatsapp-container {
+            width: 100%;
+            max-width: 600px;
+            height: 90vh;
+            background-color: #efeae2;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Header Chat */
+        .chat-header {
+            background-color: #00a884;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            background-color: #ccc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .chat-info h2 {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .chat-info span {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        #log {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 7.5px;
+            font-size: 14px;
+            word-wrap: break-word;
+            box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+            position: relative;
+        }
+
+        .message-bubble.sent {
+            background-color: #d9fdd3;
+            align-self: flex-end;
+            border-top-right-radius: 0;
+        }
+
+        .message-bubble.received {
+            background-color: #ffffff;
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+
+        .message-bubble.system {
+            background-color: #e2f3f5;
+            align-self: center;
+            color: #333;
+            font-size: 12px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        /* Area Input Chat */
+        .chat-input-area {
+            background-color: #f0f2f5;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #message {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+            font-size: 14px;
+            background-color: #ffffff;
+        }
+
+        button {
+            background-color: #00a884;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #019574;
+        }
+    </style>
+</head>
+<body>
+
+<div class="whatsapp-container">
+    <div class="chat-header">
+        <div class="profile-pic">WS</div>
+        <div class="chat-info">
+            <h2>WebSocket</h2>
+            <span id="status-text">Menghubungkan...</span>
+        </div>
+    </div>
+
+    <div id="log"></div>
+
+    <div class="chat-input-area">
+        <input id="message" type="text" placeholder="Ketik pesan..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Kirim</button>
+    </div>
+</div>
+
+<script>
+    const logElement = document.getElementById("log");
+    const statusText = document.getElementById("status-text");
+    const socket = new WebSocket("ws://localhost:2500/ws");
+
+    function appendMessage(text, type) {
+        const bubble = document.createElement("div");
+        bubble.className = `message-bubble ${type}`;
+        bubble.textContent = text;
+        logElement.appendChild(bubble);
+        logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    socket.onopen = function () {
+        statusText.textContent = "online";
+        appendMessage("Terhubung ke server WebSocket", "system");
+    };
+
+    socket.onmessage = function (event) {
+        appendMessage(event.data, "received");
+    };
+
+    socket.onerror = function (error) {
+        statusText.textContent = "error";
+        appendMessage("Terjadi kesalahan pada koneksi", "system");
+        console.error(error);
+    };
+
+    socket.onclose = function () {
+        statusText.textContent = "offline";
+        appendMessage("Koneksi terputus", "system");
+    };
+
+    function sendMessage() {
+        const input = document.getElementById("message");
+        const text = input.value.trim();
+
+        if (text === "") return;
+
+        socket.send(text);
+        appendMessage(text, "sent");
+        input.value = "";
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    }
+</script>
+
+</body>
+</html>
